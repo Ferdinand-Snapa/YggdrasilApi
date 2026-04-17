@@ -1,35 +1,51 @@
-﻿using YggdrasilApi.Models;
+﻿using Microsoft.EntityFrameworkCore;
+using YggdrasilApi.Data;
+using YggdrasilApi.Dtos;
+using YggdrasilApi.Models;
 
-namespace YggdrasilApi.Services
+namespace YggdrasilApi.Services;
+
+public class GraphService(AppDbContext context) : IGraphService
 {
-    public class GraphService : IGraphService
+    public Task<GraphResponse> CreateGraphAsync(Graph graph)
     {
-        static List<Graph> graphs = new List<Graph> {
-            new Graph { Id = 1, Name = "Graph 1", Nodes = [new Node { Id = 1, PositionX = 1, PositionY = 1 }, new Node { Id = 2, PositionX = 1, PositionY = 1 }] },
-            new Graph { Id = 2, Name = "Graph 2", Nodes = [new Node { Id = 1, PositionX = 1, PositionY = 1 }, new Node { Id = 2, PositionX = 1, PositionY = 1 }] },
-        };
-        public Task<Graph> CreateGraphAsync(Graph graph)
-        {
-            throw new NotImplementedException();
-        }
+        throw new NotImplementedException();
+    }
 
-        public Task<bool> DeleteGraphAsync(int id)
-        {
-            throw new NotImplementedException();
-        }
+    public Task<bool> DeleteGraphAsync(int id)
+    {
+        throw new NotImplementedException();
+    }
+        
+    public async Task<List<GraphResponse>> GetAllGraphsAsync()
+        => await context.Graphs
+        .Include(g => g.Nodes)
+        .Include(g => g.Connections)
+        .Select(g => new GraphResponse{
+            Name = g.Name,
+            Nodes = g.Nodes,
+            Connections = g.Connections
+        }).ToListAsync();
 
-        public async Task<List<Graph>> GetAllGraphsAsync()
-            => await Task.FromResult(graphs);
+    public async Task<GraphResponse?> GetGraphByIdAsync(int id)
+    {
+        var result = await context.Graphs
+            .Where(g => g.Id == id)
+            .Include(g => g.Nodes)
+            .Include(g => g.Connections)
+            .Select(g => new GraphResponse
+            {
+                Name = g.Name,
+                Nodes = g.Nodes,
+                Connections = g.Connections
+            })
+            .FirstOrDefaultAsync();
 
-        public async Task<Graph?> GetGraphByIdAsync(int id)
-        {
-            var result = graphs.FirstOrDefault(g => g.Id == id);
-            return await Task.FromResult(result);
-        }
+        return result;
+    }
 
-        public Task<bool> UpdateGraphAsync(int id)
-        {
-            throw new NotImplementedException();
-        }
+    public Task<bool> UpdateGraphAsync(int id)
+    {
+        throw new NotImplementedException();
     }
 }

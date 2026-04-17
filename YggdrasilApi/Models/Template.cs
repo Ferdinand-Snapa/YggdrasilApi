@@ -5,10 +5,8 @@
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
-        public int[] Derives { get; set; } = [];
-        public Dictionary<int, Decleration> Declerations { get; set; } = new Dictionary<int, Decleration>();
-        public Dictionary<int, Graph> Graphs { get; set; } = new Dictionary<int, Graph>();
-
-        
+        public int[] Derives { get; set; } = System.Array.Empty<int>();
+        public List<Decleration> Declerations { get; set; } = new List<Decleration>();
+        public List<Graph> Graphs { get; set; } = new List<Graph>();
     }
 }
