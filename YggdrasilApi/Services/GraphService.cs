@@ -7,14 +7,45 @@ namespace YggdrasilApi.Services;
 
 public class GraphService(AppDbContext context) : IGraphService
 {
-    public Task<GraphResponse> CreateGraphAsync(Graph graph)
+    public async Task<GraphResponse> CreateGraphAsync(CreateGraphRequest graph)
     {
-        throw new NotImplementedException();
+        var newGraph = new Graph
+        {
+            Name = graph.Name
+        };
+
+        context.Graphs.Add(newGraph);
+        await context.SaveChangesAsync();
+
+        return new GraphResponse
+        {
+            Id = newGraph.Id,
+            Name = newGraph.Name,
+            Nodes = newGraph.Nodes,
+            Connections = newGraph.Connections
+        };
     }
 
-    public Task<bool> DeleteGraphAsync(int id)
+    public async Task<bool> DeleteGraphAsync(int id)
     {
-        throw new NotImplementedException();
+        var graphToDelete = await context.Graphs
+            .Include(g => g.Nodes)
+            .Include(g => g.Connections)
+            .FirstOrDefaultAsync(g => g.Id == id);
+
+        if (graphToDelete is null)
+            return false;
+
+        if (graphToDelete.Nodes?.Count > 0)
+            context.Nodes.RemoveRange(graphToDelete.Nodes);
+
+        if (graphToDelete.Connections?.Count > 0)
+            context.Connections.RemoveRange(graphToDelete.Connections);
+
+        context.Graphs.Remove(graphToDelete);
+        await context.SaveChangesAsync();
+
+        return true;
     }
         
     public async Task<List<GraphResponse>> GetAllGraphsAsync()
@@ -22,6 +53,7 @@ public class GraphService(AppDbContext context) : IGraphService
         .Include(g => g.Nodes)
         .Include(g => g.Connections)
         .Select(g => new GraphResponse{
+            Id = g.Id,
             Name = g.Name,
             Nodes = g.Nodes,
             Connections = g.Connections
@@ -35,6 +67,7 @@ public class GraphService(AppDbContext context) : IGraphService
             .Include(g => g.Connections)
             .Select(g => new GraphResponse
             {
+                Id = g.Id,
                 Name = g.Name,
                 Nodes = g.Nodes,
                 Connections = g.Connections
@@ -44,8 +77,16 @@ public class GraphService(AppDbContext context) : IGraphService
         return result;
     }
 
-    public Task<bool> UpdateGraphAsync(int id)
+    public async Task<bool> UpdateGraphAsync(int id, UpdateGraphRequest graph)
     {
-        throw new NotImplementedException();
+        var existingGraph = await context.Graphs.FindAsync(id);
+
+        if (existingGraph is null)
+            return false;
+
+        existingGraph.Name = graph.Name;
+
+        await context.SaveChangesAsync();
+        return true;
     }
 }

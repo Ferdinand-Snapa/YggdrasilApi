@@ -6,8 +6,8 @@ namespace YggdrasilApi.Services
     {
         Task<List<GraphResponse>> GetAllGraphsAsync();
         Task<GraphResponse?> GetGraphByIdAsync(int id);
-        Task<GraphResponse> CreateGraphAsync(Graph graph);
-        Task<bool> UpdateGraphAsync(int id);
+        Task<GraphResponse> CreateGraphAsync(CreateGraphRequest graph);
+        Task<bool> UpdateGraphAsync(int id, UpdateGraphRequest graph);
         Task<bool> DeleteGraphAsync(int id);
     }
 }
