@@ -27,6 +27,23 @@ public class GraphController(IGraphService service) : ControllerBase
         return CreatedAtAction(nameof(GetGraph), new { id = createdGraph.Id }, createdGraph);
     }
 
+    [HttpPost("{id}/nodes")]
+    public async Task<ActionResult<Node>> AddNode(int id, AddNodeRequest request)
+    {
+        var node = await service.AddNodeAsync(id, request);
+        return node is null ? NotFound("Graph with given Id was not found") : CreatedAtAction(nameof(GetGraph), new { id = id }, node);
+    }
+
+    [HttpPost("{id}/connections")]
+    public async Task<ActionResult> AddConnection(int id, CreateConnectionRequest request)
+    {
+        var (success, error, connection) = await service.AddConnectionAsync(id, request);
+        if (!success)
+            return BadRequest(error);
+
+        return CreatedAtAction(nameof(GetGraph), new { id = id }, connection);
+    }
+
     [HttpPut("{id}")]
     public async Task<ActionResult> UpdateGraph(int id, UpdateGraphRequest graph)
     {
@@ -40,4 +57,26 @@ public class GraphController(IGraphService service) : ControllerBase
         var result = await service.DeleteGraphAsync(id);
         return result ? NoContent() : NotFound("Graph with given Id was not found");
     }
+
+    [HttpDelete("/nodes/{nodeId}")]
+    public async Task<ActionResult> DeleteNode(int nodeId)
+    {
+        var result = await service.DeleatNodeAsync(nodeId);
+        return result ? NoContent() : NotFound("Node or Graph not found");
+    }
+
+    [HttpPut("/nodes/{nodeId}")]
+    public async Task<ActionResult> UpdateNodeAsync(int id, UpdateNodeRequest request)
+    {
+        var result = await service.UpdateNodeAsync(id, request);
+        return result ? NoContent() : NotFound("Graph with given Id was not found");
+    }
+
+    [HttpPut("/nodes/{nodeId}/values")]
+    public async Task<ActionResult> SetNodeValues(int nodeId, SetNodeValuesRequest request)
+    {
+        var result = await service.SetNodeValuesAsync(nodeId, request.Values);
+        return result ? NoContent() : NotFound("Node not found");
+    }
+
 }

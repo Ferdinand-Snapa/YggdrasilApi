@@ -94,6 +94,8 @@ namespace YggdrasilApi.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     PositionX = table.Column<int>(type: "int", nullable: false),
                     PositionY = table.Column<int>(type: "int", nullable: false),
+                    Type = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ValuesJson = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     GraphId = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>

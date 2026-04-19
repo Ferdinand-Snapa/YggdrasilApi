@@ -11,7 +11,7 @@ using YggdrasilApi.Data;
 namespace YggdrasilApi.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260416143957_Initial")]
+    [Migration("20260419133409_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -117,6 +117,14 @@ namespace YggdrasilApi.Migrations
 
                     b.Property<int>("PositionY")
                         .HasColumnType("int");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ValuesJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
