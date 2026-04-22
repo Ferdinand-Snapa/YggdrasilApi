@@ -2,7 +2,7 @@
 {
     public enum DeclerationType
     {
-        Float, Dice, String, Bool, Undefined
+        Float, Dice, String, Bool, Undefined, Unit
     }
     public class Decleration
     {

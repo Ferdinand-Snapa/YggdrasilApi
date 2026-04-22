@@ -91,7 +91,7 @@ public class GraphService(AppDbContext context) : IGraphService
         return true;
     }
 
-    public async Task<bool> SetNodeValuesAsync(int nodeId, System.Collections.Generic.IDictionary<string, object?> values)
+    public async Task<bool> SetNodeValuesAsync(int nodeId, IDictionary<string, object?> values)
     {
         var node = await context.Nodes.FirstOrDefaultAsync(n => n.Id == nodeId);
         if (node is null)

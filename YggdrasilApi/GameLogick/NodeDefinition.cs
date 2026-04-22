@@ -13,15 +13,16 @@ namespace YggdrasilApi.GameLogick
         public string Type { get; init; } = string.Empty;
 
         // Data ports describe value inputs/outputs
-        public List<YggdrasilApi.Models.PortDefenition> InputPorts { get; } = new List<YggdrasilApi.Models.PortDefenition>();
-        public List<YggdrasilApi.Models.PortDefenition> OutputPorts { get; } = new List<YggdrasilApi.Models.PortDefenition>();
+        public List<PortDefenition> InputPorts { get; } = new List<YggdrasilApi.Models.PortDefenition>();
+        public List<PortDefenition> OutputPorts { get; } = new List<YggdrasilApi.Models.PortDefenition>();
 
         // Execution result: DataOutputs maps output data port names to values
         // FlowOutputs is an ordered list of output flow port names representing which flows to trigger next
         public class NodeExecutionResult
         {
             public Dictionary<string, object?> DataOutputs { get; set; } = new Dictionary<string, object?>();
-            public string[] FlowOutputs { get; set; } = Array.Empty<string>();
+            // FlowOutputs is an ordered list of output flow port ids representing which flows to trigger next
+            public int[] FlowOutputs { get; set; } = Array.Empty<int>();
         }
 
         // Evaluate is used for purely functional nodes that return outputs synchronously.

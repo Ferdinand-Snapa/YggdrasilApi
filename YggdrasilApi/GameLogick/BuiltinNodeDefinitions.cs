@@ -22,8 +22,8 @@ namespace YggdrasilApi.GameLogick
                 var v = UnwrapJsonValue(raw);
                 return new NodeDefinition.NodeExecutionResult
                 {
-                    DataOutputs = new Dictionary<string, object?> { ["Value"] = v },
-                    FlowOutputs = Array.Empty<string>()
+                    DataOutputs = new System.Collections.Generic.Dictionary<string, object?> { ["Value"] = v },
+                    FlowOutputs = Array.Empty<int>()
                 };
             };
 
@@ -48,8 +48,8 @@ namespace YggdrasilApi.GameLogick
                 // After printing, trigger the "Out" flow port if present
                 return new NodeDefinition.NodeExecutionResult
                 {
-                    DataOutputs = new System.Collections.Generic.Dictionary<string, object?>(),
-                    FlowOutputs = new[] { "Out" }
+                    DataOutputs = new Dictionary<string, object?>(),
+                    FlowOutputs = [2]
                 };
             };
 
