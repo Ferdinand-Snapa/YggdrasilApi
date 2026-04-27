@@ -13,6 +13,7 @@ public class Dice
 {
     // Key: number of sides, Value: count of dice
     public Dictionary<int, int> Rolls { get; set; } = new Dictionary<int, int>();
+    public Dictionary<int, int[]>? Result { get; set; }
 
     public Dice() { }
 
@@ -97,12 +98,31 @@ public class Dice
     {
         var rand = new Random();
         int total = 0;
+        if (Result == null)
+        {
+            Result = new Dictionary<int, int[]>();
+        }
         foreach (var kv in Rolls)
         {
             int sides = kv.Key;
-            int count = kv.Value;
+
+            int[] allreadyRolled = Result.ContainsKey(sides) ?
+                Result[sides].Where(res => res > 0).ToArray() :
+                Array.Empty<int>();
+
+            int count = kv.Value - allreadyRolled.Length;
+
+
+
+            total += allreadyRolled.Sum();
+
             for (int i = 0; i < count; i++)
-                total += rand.Next(1, sides + 1);
+            {
+                int rolledValue = rand.Next(1, sides + 1);
+                total += rolledValue;
+                Result[sides] = Result[sides].Append(rolledValue).ToArray();
+            }
+                
             
         }
         return total;
