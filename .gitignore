@@ -361,3 +361,8 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/YggdrasilApi/IMPLEMENTATION_SUMMARY.md
+/YggdrasilApi/QUICKREF_WEBSOCKET_ROLES.md
+/YggdrasilApi/README_WEBSOCKET_IMPLEMENTATION.md
+/YggdrasilApi/WEBSOCKET_API_REFERENCE.md
+/YggdrasilApi/WEBSOCKET_ROLE_BASED_GUIDE.md
