@@ -7,37 +7,43 @@ namespace YggdrasilApi.GameLogick
 {
     // A definition for a node type in the flow scripting system.
     // This is a runtime-only class: it describes ports and behaviour and is not mapped to the database.
+    // All properties are init-only — definitions are built once at startup and never mutated.
     public class NodeDefinition
     {
         // Identifier/key for this node type (matches Node.Type)
-        public string Type { get; init; } = string.Empty;
+        public required string Type { get; init; }
 
-        // Data ports describe value inputs/outputs
-        public List<PortDefenition> InputPorts { get; } = new List<YggdrasilApi.Models.PortDefenition>();
-        public List<PortDefenition> OutputPorts { get; } = new List<YggdrasilApi.Models.PortDefenition>();
+        // Port lists — immutable after construction
+        public IReadOnlyList<PortDefenition> InputPorts { get; init; } = [];
+        public IReadOnlyList<PortDefenition> OutputPorts { get; init; } = [];
 
-        // Execution result: DataOutputs maps output data port names to values
-        // FlowOutputs is an ordered list of output flow port names representing which flows to trigger next
+        // Execution result returned by Evaluate / Execute.
+        // DataOutputs maps output data-port names to produced values.
+        // FlowOutputs lists the output flow-port ids that should be triggered next.
         public class NodeExecutionResult
         {
             public Dictionary<string, object?> DataOutputs { get; set; } = new Dictionary<string, object?>();
-            // FlowOutputs is an ordered list of output flow port ids representing which flows to trigger next
-            public int[] FlowOutputs { get; set; } = Array.Empty<int>();
+            public int[] FlowOutputs { get; set; } = [];
         }
 
-        // Evaluate is used for purely functional nodes that return outputs synchronously.
-        // Signature: (inputs, nodeValues) => NodeExecutionResult
-        // - inputs: dictionary mapping input port names to values (from connected nodes)
-        // - nodeValues: the node.Values dictionary (persistent data for the node)
-        public Func<IDictionary<string, object?>, IDictionary<string, object?>, NodeExecutionResult?>? Evaluate { get; set; }
+        // Evaluate — purely functional nodes; synchronous, no side-effects.
+        // (inputs, nodeValues, charId, session) => result
+        public Func<
+            IDictionary<string, object?>,
+            IDictionary<string, object?>,
+            int,
+            GameSession?,
+            Task<NodeExecutionResult?>?>? Evaluate
+        { get; init; }
 
-        // Execute is used for nodes that perform actions / have side-effects and may be async.
-        // Signature: (inputs, nodeValues) => Task<NodeExecutionResult>
-        public Func<IDictionary<string, object?>, IDictionary<string, object?>, Task<NodeExecutionResult?>?>? Execute { get; set; }
-
-        public NodeDefinition(string type)
-        {
-            Type = type;
-        }
+        // Execute — nodes with side-effects or async work.
+        // (inputs, nodeValues, charId, session) => Task<result>
+        public Func<
+            IDictionary<string, object?>,
+            IDictionary<string, object?>,
+            int,
+            GameSession?,
+            Task<NodeExecutionResult?>?>? Execute
+        { get; init; }
     }
 }

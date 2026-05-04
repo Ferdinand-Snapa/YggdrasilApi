@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 using YggdrasilApi.Data;
 using YggdrasilApi.Hubs;
+using YggdrasilApi.GameLogick;
 using YggdrasilApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -22,6 +23,9 @@ builder.Services.AddSingleton<ISessionService, SessionService>();
 builder.Services.AddSignalR();
 
 var app = builder.Build();
+
+// Register all built-in node definitions so NodeRegistry can resolve Node.Definition.
+BuiltinNodeDefinitions.RegisterDefaults();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

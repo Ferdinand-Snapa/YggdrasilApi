@@ -56,7 +56,7 @@ namespace YggdrasilApi.Models
         }
 
         /// <summary>
-        /// Deserialize a Unit from JSON format: { "TemplateId": id, "Values": { "1": value, "2": value } }
+        /// Deserialize a Unit from JSON format: { "TemplateId": id, "Values": { "declerationId#1": value, "declerationId#2": value } }
         /// Returns null if JSON is invalid.
         /// </summary>
         public static Unit? FromJson(string json)
