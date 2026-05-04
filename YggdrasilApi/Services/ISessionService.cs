@@ -9,9 +9,20 @@ namespace YggdrasilApi.Services
         Task<List<UnitResponse>> GetAllUnitsAsync();
 
         // Session management
-        GameSession CreateSession(string sessionId);
+        GameSession CreateSession(string sessionId, string leaderUserId, string leaderUserName);
         GameSession? GetSession(string sessionId);
         void DeleteSession(string sessionId);
+
+        // User management
+        SessionUser AddUserToSession(string sessionId, string userId, string userName);
+        SessionUser? GetUser(string sessionId, string userId);
+        bool RemoveUserFromSession(string sessionId, string userId);
+        bool UpdateUserRole(string sessionId, string userId, SessionUserRole newRole);
+        List<SessionUser> GetSessionUsers(string sessionId);
+        List<SessionUser> GetPendingUsers(string sessionId);
+        List<SessionUser> GetAuthorizedUsers(string sessionId);
+        bool CanManageRoles(string sessionId, string userId);
+        bool IsUserBlackListed(string sessionId, string userId);
 
         // Player management
         void AddPlayerToSession(string sessionId, Player player);

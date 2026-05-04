@@ -13,9 +13,15 @@ namespace YggdrasilApi.Services
             throw new NotImplementedException();
         }
 
-        public GameSession CreateSession(string sessionId)
+        public GameSession CreateSession(string sessionId, string leaderUserId, string leaderUserName)
         {
             var session = new GameSession(sessionId);
+            var leader = new SessionUser(leaderUserId, leaderUserName)
+            {
+                Role = SessionUserRole.SessionLeader,
+                IsConnected = true
+            };
+            session.AddUser(leader);
             _sessions[sessionId] = session;
             return session;
         }
@@ -29,6 +35,89 @@ namespace YggdrasilApi.Services
         public void DeleteSession(string sessionId)
         {
             _sessions.Remove(sessionId);
+        }
+
+        public SessionUser AddUserToSession(string sessionId, string userId, string userName)
+        {
+            var session = GetSession(sessionId);
+            if (session == null)
+                throw new KeyNotFoundException($"Session '{sessionId}' not found.");
+
+            var user = new SessionUser(userId, userName)
+            {
+                Role = SessionUserRole.Pending
+            };
+            session.AddUser(user);
+            return user;
+        }
+
+        public SessionUser? GetUser(string sessionId, string userId)
+        {
+            var session = GetSession(sessionId);
+            return session?.GetUser(userId);
+        }
+
+        public bool RemoveUserFromSession(string sessionId, string userId)
+        {
+            var session = GetSession(sessionId);
+            if (session == null)
+                throw new KeyNotFoundException($"Session '{sessionId}' not found.");
+
+            return session.RemoveUser(userId);
+        }
+
+        public bool UpdateUserRole(string sessionId, string userId, SessionUserRole newRole)
+        {
+            var session = GetSession(sessionId);
+            if (session == null)
+                throw new KeyNotFoundException($"Session '{sessionId}' not found.");
+
+            return session.UpdateUserRole(userId, newRole);
+        }
+
+        public List<SessionUser> GetSessionUsers(string sessionId)
+        {
+            var session = GetSession(sessionId);
+            if (session == null)
+                throw new KeyNotFoundException($"Session '{sessionId}' not found.");
+
+            return session.Users.Values.ToList();
+        }
+
+        public List<SessionUser> GetPendingUsers(string sessionId)
+        {
+            var session = GetSession(sessionId);
+            if (session == null)
+                throw new KeyNotFoundException($"Session '{sessionId}' not found.");
+
+            return session.GetPendingUsers();
+        }
+
+        public List<SessionUser> GetAuthorizedUsers(string sessionId)
+        {
+            var session = GetSession(sessionId);
+            if (session == null)
+                throw new KeyNotFoundException($"Session '{sessionId}' not found.");
+
+            return session.GetAuthorizedUsers();
+        }
+
+        public bool CanManageRoles(string sessionId, string userId)
+        {
+            var session = GetSession(sessionId);
+            if (session == null)
+                return false;
+
+            return session.CanManageRoles(userId);
+        }
+
+        public bool IsUserBlackListed(string sessionId, string userId)
+        {
+            var session = GetSession(sessionId);
+            if (session == null)
+                return false;
+
+            return session.IsBlackListed(userId);
         }
 
         public void AddPlayerToSession(string sessionId, Player player)

@@ -15,6 +15,7 @@ public class UserInputRequest
     public Dictionary<string, object?> InputSchema { get; set; } = new Dictionary<string, object?>();
     public object? Response { get; set; }
     public bool IsResolved { get; set; }
+    public string? ResolvedByPlayerId { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? ResolvedAt { get; set; }
 
@@ -30,11 +31,12 @@ public class UserInputRequest
     /// <summary>
     /// Resolves the input request with the provided response.
     /// </summary>
-    public void Resolve(object? response)
+    public void Resolve(object? response, string? resolvedByPlayerId = null)
     {
         Response = response;
         IsResolved = true;
         ResolvedAt = DateTime.UtcNow;
+        ResolvedByPlayerId = resolvedByPlayerId;
     }
 
     /// <summary>

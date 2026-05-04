@@ -11,15 +11,238 @@ namespace YggdrasilApi.Controllers;
 public class SessionController(ISessionService service) : ControllerBase
 {
     /// <summary>
+    /// Creates a new game session with the user as session leader.
+    /// This automatically adds the creator with SessionLeader role.
+    /// </summary>
+    [HttpPost("create")]
+    public ActionResult<object> CreateGameSession([FromBody] CreateGameSessionRequest request)
+    {
+        try
+        {
+            var session = service.CreateSession(request.SessionId, request.UserId, request.UserName);
+            return CreatedAtAction(nameof(GetGameSession), new { sessionId = request.SessionId }, new
+            {
+                SessionId = session.Id,
+                LeaderUserId = request.UserId,
+                LeaderUserName = request.UserName,
+                WebSocketUrl = $"ws://localhost:5000/gamesession?sessionId={request.SessionId}&userId={request.UserId}",
+                Message = "Session created. Connect via WebSocket using the provided URL."
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Allows a user to join an existing session.
+    /// User will be added with Pending role and require approval from SessionLeader/CoLeader.
+    /// </summary>
+    [HttpPost("join")]
+    public ActionResult<object> JoinGameSession([FromBody] JoinGameSessionRequest request)
+    {
+        try
+        {
+            var session = service.GetSession(request.SessionId);
+            if (session == null)
+                return NotFound($"Session '{request.SessionId}' not found.");
+
+            // Check if user is already in session
+            var existingUser = service.GetUser(request.SessionId, request.UserId);
+            if (existingUser != null)
+                return BadRequest("User already in session.");
+
+            // Check if user is blacklisted
+            var leader = session.GetSessionLeader();
+            if (service.IsUserBlackListed(request.SessionId, request.UserId))
+                return Forbid("You are blacklisted from this session.");
+
+            // Add user to session with Pending role
+            var user = service.AddUserToSession(request.SessionId, request.UserId, request.UserName);
+
+            return CreatedAtAction(nameof(GetGameSessionUsers), new { sessionId = request.SessionId }, new
+            {
+                SessionId = request.SessionId,
+                UserId = request.UserId,
+                UserName = request.UserName,
+                Role = user.Role.ToString(),
+                WebSocketUrl = $"ws://localhost:5000/gamesession?sessionId={request.SessionId}&userId={request.UserId}",
+                Message = "Successfully joined session. Your role is Pending. Connect via WebSocket and wait for approval."
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Gets game session information including users.
+    /// </summary>
+    [HttpGet("{sessionId}")]
+    public ActionResult<object> GetGameSession(string sessionId)
+    {
+        var session = service.GetSession(sessionId);
+        if (session == null)
+            return NotFound($"Session '{sessionId}' not found.");
+
+        var users = service.GetSessionUsers(sessionId);
+        var userDtos = users.Select(u => new
+        {
+            u.UserId,
+            u.UserName,
+            Role = u.Role.ToString(),
+            u.IsConnected,
+            u.JoinedAt
+        }).ToList();
+
+        return Ok(new
+        {
+            session.Id,
+            session.CreatedAt,
+            UserCount = users.Count,
+            ConnectedUsers = users.Count(u => u.IsConnected),
+            PendingUsers = service.GetPendingUsers(sessionId).Count,
+            PlayerCount = session.ActivePlayerCount,
+            UnitCount = session.TotalUnitCount,
+            Duration = session.Duration,
+            Users = userDtos
+        });
+    }
+
+    /// <summary>
+    /// Gets all users in a session.
+    /// </summary>
+    [HttpGet("{sessionId}/users")]
+    public ActionResult<object> GetGameSessionUsers(string sessionId)
+    {
+        try
+        {
+            var users = service.GetSessionUsers(sessionId);
+            var userDtos = users.Select(u => new
+            {
+                u.UserId,
+                u.UserName,
+                Role = u.Role.ToString(),
+                u.IsConnected,
+                u.JoinedAt
+            }).ToList();
+
+            return Ok(new
+            {
+                SessionId = sessionId,
+                UserCount = users.Count,
+                ConnectedUsers = users.Count(u => u.IsConnected),
+                Users = userDtos
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Gets all pending users waiting for role assignment.
+    /// </summary>
+    [HttpGet("{sessionId}/pending-users")]
+    public ActionResult<object> GetPendingUsers(string sessionId)
+    {
+        try
+        {
+            var pendingUsers = service.GetPendingUsers(sessionId);
+            var userDtos = pendingUsers.Select(u => new
+            {
+                u.UserId,
+                u.UserName,
+                u.IsConnected,
+                u.JoinedAt
+            }).ToList();
+
+            return Ok(new
+            {
+                SessionId = sessionId,
+                PendingUserCount = pendingUsers.Count,
+                Users = userDtos
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Gets all authorized users (SessionLeader and CoLeader).
+    /// </summary>
+    [HttpGet("{sessionId}/authorized-users")]
+    public ActionResult<object> GetAuthorizedUsers(string sessionId)
+    {
+        try
+        {
+            var authorizedUsers = service.GetAuthorizedUsers(sessionId);
+            var userDtos = authorizedUsers.Select(u => new
+            {
+                u.UserId,
+                u.UserName,
+                Role = u.Role.ToString(),
+                u.IsConnected,
+                u.JoinedAt
+            }).ToList();
+
+            return Ok(new
+            {
+                SessionId = sessionId,
+                AuthorizedUserCount = authorizedUsers.Count,
+                Users = userDtos
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Gets a specific user in a session.
+    /// </summary>
+    [HttpGet("{sessionId}/users/{userId}")]
+    public ActionResult<object> GetSessionUser(string sessionId, string userId)
+    {
+        try
+        {
+            var user = service.GetUser(sessionId, userId);
+            if (user == null)
+                return NotFound("User not found in session.");
+
+            return Ok(new
+            {
+                user.UserId,
+                user.UserName,
+                Role = user.Role.ToString(),
+                user.IsConnected,
+                user.JoinedAt
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    /// <summary>
     /// Creates a new game session.
     /// </summary>
     [HttpPost]
+    [Obsolete("Use /create endpoint instead")]
     public ActionResult<string> CreateSession([FromBody] CreateSessionRequest request)
     {
         try
         {
-            var session = service.CreateSession(request.SessionId);
-            return CreatedAtAction(nameof(GetSession), new { sessionId = request.SessionId }, request.SessionId);
+            // This endpoint is deprecated but kept for backward compatibility
+            // Use CreateGameSession instead
+            return BadRequest("This endpoint is deprecated. Use POST /api/session/create instead.");
         }
         catch (Exception ex)
         {
