@@ -48,13 +48,14 @@ public partial class GameSession
     /// Creates and registers a pending input request tied to a specific unit.
     /// Throws if the unit does not exist in the session.
     /// </summary>
-    public UserInputRequest RequestUnitInput(int unitId, string requestType, Dictionary<string, object?> inputSchema)
+    public UserInputRequest RequestUnitInput(int unitId, string requestType,
+                                             Dictionary<string, InputField> schema)
     {
         if (!Units.ContainsKey(unitId))
             throw new ArgumentException($"Unit '{unitId}' does not exist in this session.");
 
         var requestId = Guid.NewGuid().ToString();
-        var request = new UserInputRequest(requestId, unitId, requestType, inputSchema);
+        var request = new UserInputRequest(requestId, unitId, schema);
         PendingInputRequests[requestId] = request;
         return request;
     }

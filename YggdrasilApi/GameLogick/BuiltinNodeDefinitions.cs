@@ -62,7 +62,7 @@ namespace YggdrasilApi.GameLogick
                     Type = "Input",
                     OutputPorts =
                     [
-                        new DataPort { PortId = 0, Name = "Value", PortType = "any" }
+                        new DataPort { PortId = 0, Name = "Value", PortType = FieldType.Undefined }
                     ],
                     Evaluate = async (_, _, _, _) =>
                     {
@@ -97,7 +97,7 @@ namespace YggdrasilApi.GameLogick
                     Type = "Output",
                     InputPorts =
                     [
-                        new DataPort { PortId = 0, Name = "Value", PortType = "any" }
+                        new DataPort { PortId = 0, Name = "Value", PortType = FieldType.Undefined }
                     ],
                     Evaluate = async (inputs, _, _, _) =>
                     {
@@ -115,7 +115,7 @@ namespace YggdrasilApi.GameLogick
                     InputPorts =
                     [
                         new FlowPort { PortId = 0, Name = "In" },
-                        new DataPort  { PortId = 1, Name = "Value", PortType = "any" }
+                        new DataPort  { PortId = 1, Name = "Value", PortType = FieldType.Undefined }
                     ],
                     OutputPorts =
                     [
@@ -147,12 +147,12 @@ namespace YggdrasilApi.GameLogick
                     Type = "Addition",
                     InputPorts =
                     [
-                        new DataPort { PortId = 0, Name = "A", PortType = "number" },
-                        new DataPort { PortId = 1, Name = "B", PortType = "number" }
+                        new DataPort { PortId = 0, Name = "A", PortType = FieldType.Float },
+                        new DataPort { PortId = 1, Name = "B", PortType = FieldType.Float }
                     ],
                     OutputPorts =
                     [
-                        new DataPort { PortId = 2, Name = "Result", PortType = "number" }
+                        new DataPort { PortId = 2, Name = "Result", PortType = FieldType.Float }
                     ],
                     Evaluate = async (inputs, _, _, _) =>
                     {
@@ -176,12 +176,12 @@ namespace YggdrasilApi.GameLogick
                     Type = "Multiply",
                     InputPorts =
                     [
-                        new DataPort  { PortId = 0, Name = "A", PortType = "number" },
-                        new DataPort  { PortId = 1, Name = "B", PortType = "number" }
+                        new DataPort  { PortId = 0, Name = "A", PortType = FieldType.Float },
+                        new DataPort  { PortId = 1, Name = "B", PortType = FieldType.Float }
                     ],
                     OutputPorts =
                     [
-                        new DataPort  { PortId = 0, Name = "Result", PortType = "number" }
+                        new DataPort  { PortId = 0, Name = "Result", PortType = FieldType.Float }
                     ],
                     Evaluate = async (inputs, _, _, _) =>
                     {
@@ -206,7 +206,7 @@ namespace YggdrasilApi.GameLogick
                     InputPorts =
                     [
                         new FlowPort { PortId = 0, Name = "In" },
-                        new DataPort  { PortId = 1, Name = "Condition", PortType = "bool" }
+                        new DataPort  { PortId = 1, Name = "Condition", PortType = FieldType.Bool }
                     ],
                     OutputPorts =
                     [
@@ -281,7 +281,7 @@ namespace YggdrasilApi.GameLogick
                     Type = "GetUnitValue",
                     InputPorts =
                     [
-                        new DataPort { PortId = 0, Name = "Unit", PortType = "unit" }
+                        new DataPort { PortId = 0, Name = "Unit", PortType = FieldType.Unit }
                     ],
                     OutputPorts =
                     [
@@ -333,7 +333,7 @@ namespace YggdrasilApi.GameLogick
                     InputPorts =
                     [
                         new FlowPort { PortId = 0, Name = "Set"   },
-                        new DataPort  { PortId = 1, Name = "Value", PortType = "any" }
+                        new DataPort  { PortId = 1, Name = "Value", PortType = FieldType.Undefined }
                     ],
                     OutputPorts =
                     [

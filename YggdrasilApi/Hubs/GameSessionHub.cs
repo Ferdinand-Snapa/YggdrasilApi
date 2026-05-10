@@ -322,8 +322,7 @@ public class GameSessionHub : Hub
             await Clients.Group($"user-{userId}").SendAsync("InputRequest", new
             {
                 RequestId = inputRequest.Id,
-                RequestType = inputRequest.RequestType,
-                InputSchema = inputRequest.InputSchema,
+                Schema = inputRequest.Schema,
                 Timestamp = inputRequest.CreatedAt
             });
         }

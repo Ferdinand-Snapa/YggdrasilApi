@@ -8,15 +8,12 @@ public class Realm
     public List<Tag> Tags { get; set; } = new List<Tag>();
     //Root tags
     public List<TagTreeNode> TagTree { get; set; } = new List<TagTreeNode>();
-    public class TagTreeNode
+    public class TagTreeNode(Tag tag)
     {
-        public int TagId { get; set; }
+        public int TagId { get; set; } = tag.Id;
         public List<TagTreeNode> Parents { get; set; } = new List<TagTreeNode>();
         public List<TagTreeNode> Children { get; set; } = new List<TagTreeNode>();
-        public TagTreeNode(Tag tag)
-        {
-            TagId = tag.Id;
-        }
+
         public List<TagTreeNode> GetAllAncestors()
         {
             var ancestors = new List<TagTreeNode>();
@@ -25,7 +22,7 @@ public class Realm
                 ancestors.Add(parent);
                 ancestors.AddRange(parent.GetAllAncestors());
             }
-            return ancestors.Distinct().ToList();
+            return [.. ancestors.Distinct()];
         }
         public void AddParent(TagTreeNode parent)
         {
@@ -36,7 +33,7 @@ public class Realm
                 parent.Children.Add(this);
             }
         }
-         public void AddChild(TagTreeNode child)
+        public void AddChild(TagTreeNode child)
         {
             if (!Children.Contains(child))
             {

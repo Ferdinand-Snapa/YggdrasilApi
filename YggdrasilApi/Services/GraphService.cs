@@ -48,12 +48,13 @@ public class GraphService(AppDbContext context) : IGraphService
 
         return true;
     }
-        
+
     public async Task<List<GraphResponse>> GetAllGraphsAsync()
         => await context.Graphs
         .Include(g => g.Nodes)
         .Include(g => g.Connections)
-        .Select(g => new GraphResponse{
+        .Select(g => new GraphResponse
+        {
             Id = g.Id,
             Name = g.Name,
             Nodes = g.Nodes,
@@ -142,11 +143,22 @@ public class GraphService(AppDbContext context) : IGraphService
         if (inPort is null)
             return (false, "ToPortId not found on the To node's definition", null);
 
-        string outType = outPort is DataPort ? ((DataPort)outPort).PortType : "flow";
-        string inType = inPort is DataPort ? ((DataPort)inPort).PortType : "flow";
+        // FlowPort ↔ DataPort connections are never valid.
+        bool outIsFlow = outPort is FlowPort;
+        bool inIsFlow = inPort is FlowPort;
+        if (outIsFlow != inIsFlow)
+            return (false, "Cannot connect a FlowPort to a DataPort.", null);
 
-        if (!TypeCompatibility.IsCompatible(outType, inType))
-            return (false, "Outport type " + outType + " not compatible with Inport type " + inType, null);
+        // For data ports, validate that the output type is accepted by the input type.
+        if (!outIsFlow)
+        {
+            var outFieldType = ((DataPort)outPort).PortType;
+            var inFieldType = ((DataPort)inPort).PortType;
+            if (!TypeCompatibility.IsCompatible(outFieldType, inFieldType))
+                return (false,
+                    $"Output type {outFieldType} is not compatible with input type {inFieldType}.",
+                    null);
+        }
 
         var conn = new Connection
         {
@@ -174,7 +186,7 @@ public class GraphService(AppDbContext context) : IGraphService
             PositionY = request.PositionY,
             Type = request.Type
         };
-        
+
         context.Nodes.Add(node);
         graph.Nodes.Add(node);
         await context.SaveChangesAsync();

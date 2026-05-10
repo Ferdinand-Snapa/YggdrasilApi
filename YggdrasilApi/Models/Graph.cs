@@ -2,6 +2,7 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text.Json;
+using YggdrasilApi.Utils;
 
 namespace YggdrasilApi.Models
 {
@@ -31,40 +32,39 @@ namespace YggdrasilApi.Models
         /// </summary>
         [NotMapped]
         public List<PortDefenition> InputPorts =>
-            Nodes
+            [.. Nodes
                 .Where(n => n.Type is "InputFlow" or "InputValue")
                 .Select(n =>
                 {
-                    var (name, portType) = ReadPortConfig(n);
+                    var (name, fieldType) = ReadPortConfig(n);
                     return n.Type == "InputFlow"
                         ? (PortDefenition)new FlowPort { PortId = n.Id, Name = name }
-                        : new DataPort { PortId = n.Id, Name = name, PortType = portType };
-                })
-                .ToList();
+                        : new DataPort  { PortId = n.Id, Name = name, PortType = fieldType };
+                })];
 
         /// <summary>
         /// Flow and value output ports inferred from "OutputFlow" and "OutputValue" nodes.
         /// </summary>
         [NotMapped]
         public List<PortDefenition> OutputPorts =>
-            Nodes
+            [.. Nodes
                 .Where(n => n.Type is "OutputFlow" or "OutputValue")
                 .Select(n =>
                 {
-                    var (name, portType) = ReadPortConfig(n);
+                    var (name, fieldType) = ReadPortConfig(n);
                     return n.Type == "OutputFlow"
                         ? (PortDefenition)new FlowPort { PortId = n.Id, Name = name }
-                        : new DataPort { PortId = n.Id, Name = name, PortType = portType };
-                })
-                .ToList();
+                        : new DataPort  { PortId = n.Id, Name = name, PortType = fieldType };
+                })];
 
         // ── Helper ─────────────────────────────────────────────────────────────────────
 
         /// <summary>
         /// Reads "Name" and "PortType" from a node's ValuesJson without mutating the node.
-        /// Falls back to the node's Id (as string) for Name and "any" for PortType.
+        /// Falls back to the node's Id (as string) for the name and
+        /// <see cref="FieldType.Undefined"/> (accept-any) for the port type.
         /// </summary>
-        private static (string name, string portType) ReadPortConfig(Node node)
+        private static (string name, FieldType portType) ReadPortConfig(Node node)
         {
             try
             {
@@ -73,20 +73,23 @@ namespace YggdrasilApi.Models
                     using var doc = JsonDocument.Parse(node.ValuesJson);
                     var root = doc.RootElement;
 
-                    var name = root.TryGetProperty("Name", out var nameProp)
+                    var name = root.TryGetProperty(nameof(Name), out var nameProp)
                         ? nameProp.GetString() ?? node.Id.ToString()
                         : node.Id.ToString();
 
-                    var portType = root.TryGetProperty("PortType", out var typeProp)
-                        ? typeProp.GetString() ?? "any"
-                        : "any";
+                    // Read the stored string and convert to FieldType via the compatibility helper.
+                    // Unrecognised strings resolve to FieldType.Undefined (accept-any).
+                    var portTypeStr = root.TryGetProperty("PortType", out var typeProp)
+                        ? typeProp.GetString() ?? string.Empty
+                        : string.Empty;
 
+                    var portType = TypeCompatibility.ToFieldType(portTypeStr);
                     return (name, portType);
                 }
             }
             catch { /* malformed JSON — fall through to defaults */ }
 
-            return (node.Id.ToString(), "any");
+            return (node.Id.ToString(), FieldType.Undefined);
         }
     }
 }

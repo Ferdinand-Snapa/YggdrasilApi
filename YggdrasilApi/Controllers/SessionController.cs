@@ -518,9 +518,8 @@ public class SessionController(ISessionService service) : ControllerBase
         {
             Id = request.Id,
             UnitId = request.UnitId,
-            RequestType = request.RequestType,
-            InputSchema = request.InputSchema,
-            Response = request.Response,
+            Schema = request.Schema,
+            Response = request.RawResponse,
             IsResolved = request.IsResolved,
             CreatedAt = request.CreatedAt,
             ResolvedAt = request.ResolvedAt,

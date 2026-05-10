@@ -23,10 +23,11 @@ namespace YggdrasilApi.Models
         /// Try to set a value for a declaration with runtime validation against the expected type.
         /// Returns true if the value is accepted and stored, false otherwise.
         /// </summary>
-        public bool TrySetValue(int declerationId, object? value, YggdrasilApi.Models.DeclerationType expectedType, out string? error)
+        public bool TrySetValue(int declerationId, object? value, FieldType expectedType, out string? error)
         {
             error = null;
-            if (!IsValidForType(value, expectedType, out var err))
+            // Delegate validation to the centralised FieldValue system.
+            if (!FieldValue.IsValidRawValue(value, expectedType, out var err))
             {
                 error = err;
                 return false;
@@ -125,74 +126,23 @@ namespace YggdrasilApi.Models
         /// For Bool declarations, returns a bool.
         /// For String declarations, returns a string.
         /// </summary>
-        public object? GetValueParsed(int declerationId, YggdrasilApi.Models.DeclerationType expectedType)
+        public object? GetValueParsed(int declerationId, FieldType expectedType)
         {
             if (!Values.TryGetValue(declerationId, out var rawValue)) return null;
             if (rawValue is null) return null;
 
-            switch (expectedType)
-            {
-                case YggdrasilApi.Models.DeclerationType.Float:
-                    if (rawValue is double d) return d;
-                    if (rawValue is float f) return (double)f;
-                    if (rawValue is int i) return (double)i;
-                    if (rawValue is long l) return (double)l;
-                    if (rawValue is decimal dec) return (double)dec;
-                    if (rawValue is string s && double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed))
-                        return parsed;
-                    if (rawValue is System.Text.Json.JsonElement je && je.ValueKind == System.Text.Json.JsonValueKind.Number && je.TryGetDouble(out var jd))
-                        return jd;
-                    return null;
-
-                case YggdrasilApi.Models.DeclerationType.String:
-                    if (rawValue is string str) return str;
-                    return rawValue.ToString();
-
-                case YggdrasilApi.Models.DeclerationType.Bool:
-                    if (rawValue is bool b) return b;
-                    if (rawValue is string bs && bool.TryParse(bs, out var pb)) return pb;
-                    if (rawValue is int ib && (ib == 0 || ib == 1)) return ib == 1;
-                    return null;
-
-                case YggdrasilApi.Models.DeclerationType.Dice:
-                    if (rawValue is Dice dice) return dice;
-                    if (rawValue is System.Text.Json.JsonElement dj && dj.ValueKind == System.Text.Json.JsonValueKind.Object)
-                        return Dice.FromJsonElement(dj);
-                    if (rawValue is string diceStr)
-                        return Dice.FromJson(diceStr);
-                    if (rawValue is System.Collections.IDictionary dict)
-                    {
-                        var rolls = new Dictionary<int, int>();
-                        foreach (System.Collections.DictionaryEntry de in dict)
-                        {
-                            if (int.TryParse(de.Key?.ToString(), out var sides) && de.Value is int count)
-                                rolls[sides] = count;
-                        }
-                        return new Dice(rolls);
-                    }
-                    return null;
-
-                case YggdrasilApi.Models.DeclerationType.Unit:
-                    if (rawValue is Unit unit) return unit;
-                    if (rawValue is System.Text.Json.JsonElement uj && uj.ValueKind == System.Text.Json.JsonValueKind.Object)
-                        return Unit.FromJsonElement(uj);
-                    if (rawValue is string unitStr)
-                        return Unit.FromJson(unitStr);
-                    return null;
-
-                case YggdrasilApi.Models.DeclerationType.Undefined:
-                default:
-                    return rawValue;
-            }
+            // Delegate to the centralised FieldValue parsing system.
+            var parsed = FieldValue.Parse(rawValue, expectedType);
+            return parsed.Type == FieldType.Undefined ? rawValue : parsed.ToRawObject();
         }
 
-        private static bool IsValidForType(object? value, YggdrasilApi.Models.DeclerationType type, out string? error)
+        private static bool IsValidForType(object? value, FieldType type, out string? error)
         {
             error = null;
             // Allow null values only for Undefined type
             if (value is null)
             {
-                if (type == YggdrasilApi.Models.DeclerationType.Undefined)
+                if (type == FieldType.Undefined)
                     return true;
                 error = "Value cannot be null for the specified declaration type.";
                 return false;
@@ -200,7 +150,7 @@ namespace YggdrasilApi.Models
 
             switch (type)
             {
-                case YggdrasilApi.Models.DeclerationType.Float:
+                case FieldType.Float:
                     // Accept any numeric type or string parseable to number
                     if (value is sbyte || value is byte || value is short || value is ushort || value is int || value is uint || value is long || value is ulong || value is float || value is double || value is decimal)
                         return true;
@@ -209,18 +159,18 @@ namespace YggdrasilApi.Models
                     error = "Value is not a numeric type.";
                     return false;
 
-                case YggdrasilApi.Models.DeclerationType.String:
+                case FieldType.String:
                     if (value is string) return true;
                     // allow other types by converting to string implicitly
                     return true;
 
-                case YggdrasilApi.Models.DeclerationType.Bool:
+                case FieldType.Bool:
                     if (value is bool) return true;
                     if (value is string sv && bool.TryParse(sv, out _)) return true;
                     error = "Value is not a boolean.";
                     return false;
 
-                case YggdrasilApi.Models.DeclerationType.Dice:
+                case FieldType.Dice:
                     // Dice declarations are represented as a JSON object mapping number-of-sides -> count
                     // Example: { "6": 2, "20": 1 } means two d6 and one d20.
 
@@ -315,7 +265,7 @@ namespace YggdrasilApi.Models
                         return false;
                     }
 
-                case YggdrasilApi.Models.DeclerationType.Unit:
+                case FieldType.Unit:
                     // Unit declarations store a serialized Unit object (JSON with TemplateId and Values)
                     if (value is Unit) return true;
                     if (value is System.Text.Json.JsonElement ue && ue.ValueKind == System.Text.Json.JsonValueKind.Object)
@@ -357,7 +307,7 @@ namespace YggdrasilApi.Models
                     error = "Unit value must be a JSON object with 'TemplateId' property.";
                     return false;
 
-                case YggdrasilApi.Models.DeclerationType.Undefined:
+                case FieldType.Undefined:
                     // accept anything for undefined
                     return true;
 

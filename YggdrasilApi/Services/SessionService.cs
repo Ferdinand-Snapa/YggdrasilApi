@@ -39,9 +39,8 @@ namespace YggdrasilApi.Services
 
         public SessionUser AddUserToSession(string sessionId, string userId, string userName)
         {
-            var session = GetSession(sessionId);
-            if (session == null)
-                throw new KeyNotFoundException($"Session '{sessionId}' not found.");
+            var session = GetSession(sessionId)
+                ?? throw new KeyNotFoundException($"Session '{sessionId}' not found.");
 
             var user = new SessionUser(userId, userName)
             {
@@ -59,45 +58,40 @@ namespace YggdrasilApi.Services
 
         public bool RemoveUserFromSession(string sessionId, string userId)
         {
-            var session = GetSession(sessionId);
-            if (session == null)
-                throw new KeyNotFoundException($"Session '{sessionId}' not found.");
+            var session = GetSession(sessionId)
+                ?? throw new KeyNotFoundException($"Session '{sessionId}' not found.");
 
             return session.RemoveUser(userId);
         }
 
         public bool UpdateUserRole(string sessionId, string userId, SessionUserRole newRole)
         {
-            var session = GetSession(sessionId);
-            if (session == null)
-                throw new KeyNotFoundException($"Session '{sessionId}' not found.");
+            var session = GetSession(sessionId)
+                ?? throw new KeyNotFoundException($"Session '{sessionId}' not found.");
 
             return session.UpdateUserRole(userId, newRole);
         }
 
         public List<SessionUser> GetSessionUsers(string sessionId)
         {
-            var session = GetSession(sessionId);
-            if (session == null)
-                throw new KeyNotFoundException($"Session '{sessionId}' not found.");
+            var session = GetSession(sessionId)
+                ?? throw new KeyNotFoundException($"Session '{sessionId}' not found.");
 
-            return session.Users.Values.ToList();
+            return [.. session.Users.Values];
         }
 
         public List<SessionUser> GetPendingUsers(string sessionId)
         {
-            var session = GetSession(sessionId);
-            if (session == null)
-                throw new KeyNotFoundException($"Session '{sessionId}' not found.");
+            var session = GetSession(sessionId)
+                ?? throw new KeyNotFoundException($"Session '{sessionId}' not found.");
 
             return session.GetPendingUsers();
         }
 
         public List<SessionUser> GetAuthorizedUsers(string sessionId)
         {
-            var session = GetSession(sessionId);
-            if (session == null)
-                throw new KeyNotFoundException($"Session '{sessionId}' not found.");
+            var session = GetSession(sessionId)
+                ?? throw new KeyNotFoundException($"Session '{sessionId}' not found.");
 
             return session.GetAuthorizedUsers();
         }
@@ -122,9 +116,8 @@ namespace YggdrasilApi.Services
 
         public void AddPlayerToSession(string sessionId, Player player)
         {
-            var session = GetSession(sessionId);
-            if (session == null)
-                throw new KeyNotFoundException($"Session '{sessionId}' not found.");
+            var session = GetSession(sessionId)
+                ?? throw new KeyNotFoundException($"Session '{sessionId}' not found.");
 
             session.AddPlayer(player);
         }
@@ -137,9 +130,8 @@ namespace YggdrasilApi.Services
 
         public void AddUnitToSession(string sessionId, int unitId, Unit unit)
         {
-            var session = GetSession(sessionId);
-            if (session == null)
-                throw new KeyNotFoundException($"Session '{sessionId}' not found.");
+            var session = GetSession(sessionId)
+                ?? throw new KeyNotFoundException($"Session '{sessionId}' not found.");
 
             session.AddUnit(unitId, unit);
         }
@@ -152,9 +144,8 @@ namespace YggdrasilApi.Services
 
         public void AssignUnitToPlayer(string sessionId, int unitId, string playerId)
         {
-            var session = GetSession(sessionId);
-            if (session == null)
-                throw new KeyNotFoundException($"Session '{sessionId}' not found.");
+            var session = GetSession(sessionId)
+                ?? throw new KeyNotFoundException($"Session '{sessionId}' not found.");
 
             if (!session.AssignUnitToPlayer(unitId, playerId))
                 throw new InvalidOperationException($"Failed to assign unit '{unitId}' to player '{playerId}'.");
@@ -162,20 +153,19 @@ namespace YggdrasilApi.Services
 
         public List<Unit> GetPlayerUnits(string sessionId, string playerId)
         {
-            var session = GetSession(sessionId);
-            if (session == null)
-                throw new KeyNotFoundException($"Session '{sessionId}' not found.");
+            var session = GetSession(sessionId)
+                ?? throw new KeyNotFoundException($"Session '{sessionId}' not found.");
 
             return session.GetPlayerUnits(playerId);
         }
 
-        public UserInputRequest RequestUnitInput(string sessionId, int unitId, string requestType, Dictionary<string, object?> inputSchema)
+        public UserInputRequest RequestUnitInput(string sessionId, int unitId, string requestType,
+                                                  Dictionary<string, InputField> schema)
         {
-            var session = GetSession(sessionId);
-            if (session == null)
-                throw new KeyNotFoundException($"Session '{sessionId}' not found.");
+            var session = GetSession(sessionId)
+                ?? throw new KeyNotFoundException($"Session '{sessionId}' not found.");
 
-            return session.RequestUnitInput(unitId, requestType, inputSchema);
+            return session.RequestUnitInput(unitId, requestType, schema);
         }
 
         public UserInputRequest? GetInputRequest(string sessionId, string requestId)
@@ -186,27 +176,24 @@ namespace YggdrasilApi.Services
 
         public List<UserInputRequest> GetUnitPendingInputRequests(string sessionId, int unitId)
         {
-            var session = GetSession(sessionId);
-            if (session == null)
-                throw new KeyNotFoundException($"Session '{sessionId}' not found.");
+            var session = GetSession(sessionId)
+                ?? throw new KeyNotFoundException($"Session '{sessionId}' not found.");
 
             return session.GetUnitPendingInputRequests(unitId);
         }
 
         public List<UserInputRequest> GetAllPendingInputRequests(string sessionId)
         {
-            var session = GetSession(sessionId);
-            if (session == null)
-                throw new KeyNotFoundException($"Session '{sessionId}' not found.");
+            var session = GetSession(sessionId)
+                ?? throw new KeyNotFoundException($"Session '{sessionId}' not found.");
 
             return session.GetAllPendingInputRequests();
         }
 
         public void ResolveInputRequest(string sessionId, string requestId, object? response)
         {
-            var session = GetSession(sessionId);
-            if (session == null)
-                throw new KeyNotFoundException($"Session '{sessionId}' not found.");
+            var session = GetSession(sessionId)
+                ?? throw new KeyNotFoundException($"Session '{sessionId}' not found.");
 
             if (!session.ResolveInputRequest(requestId, response))
                 throw new KeyNotFoundException($"Input request '{requestId}' not found.");
@@ -214,16 +201,24 @@ namespace YggdrasilApi.Services
 
         public UserInputRequest RequestDiceRoll(string sessionId, int unitId, Dice dice)
         {
-            var session = GetSession(sessionId);
-            if (session == null)
-                throw new KeyNotFoundException($"Session '{sessionId}' not found.");
+            var session = GetSession(sessionId)
+                ?? throw new KeyNotFoundException($"Session '{sessionId}' not found.");
 
-            var diceSpec = new Dictionary<string, object?>();
-            diceSpec["DiceNotation"] = dice.ToNotation();
-            diceSpec["Sides"] = dice.Rolls.Keys.ToList();
-            diceSpec["Counts"] = dice.Rolls.Values.ToList();
+            var schema = new Dictionary<string, InputField>();
 
-            return session.RequestUnitInput(unitId, "DiceRoll", diceSpec);
+            foreach (var roll in dice.Rolls)
+            {
+                schema[$"Roll_{roll.Key}"] = new InputField
+                {
+                    Label = $"Roll {roll.Key}",
+                    Type = FieldType.Int,
+                    Rank = 1,
+                    Constraint = new NumericRangeConstraint { Min = 1, Max = roll.Key },
+                    ArrayCount = new Dictionary<int, int> { [1] = roll.Value },
+                };
+            }
+
+            return session.RequestUnitInput(unitId, "DiceRoll", schema);
         }
     }
 }

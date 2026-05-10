@@ -35,7 +35,7 @@ namespace YggdrasilApi.Services
         List<Unit> GetPlayerUnits(string sessionId, string playerId);
 
         // Input request management
-        UserInputRequest RequestUnitInput(string sessionId, int unitId, string requestType, Dictionary<string, object?> inputSchema);
+        UserInputRequest RequestUnitInput(string sessionId, int unitId, string requestType, Dictionary<string, InputField> schema);
         UserInputRequest? GetInputRequest(string sessionId, string requestId);
         List<UserInputRequest> GetUnitPendingInputRequests(string sessionId, int unitId);
         List<UserInputRequest> GetAllPendingInputRequests(string sessionId);
