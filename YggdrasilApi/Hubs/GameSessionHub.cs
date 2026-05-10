@@ -11,6 +11,8 @@ public class GameSessionHub : Hub
 {
     private readonly ISessionService _sessionService;
     private readonly ILogger<GameSessionHub> _logger;
+    private static readonly string[] UserRoles = new[] { "Spectator", "Player", "CoLeader", "BlackListed" };
+
 
     public GameSessionHub(ISessionService sessionService, ILogger<GameSessionHub> logger)
     {
@@ -395,7 +397,7 @@ public class GameSessionHub : Hub
             {
                 UserId = pendingUserId,
                 UserName = pendingUserName,
-                AvailableRoles = new[] { "Spectator", "Player", "CoLeader", "BlackListed" },
+                AvailableRoles = UserRoles,
                 Timestamp = DateTime.UtcNow
             });
 
@@ -404,7 +406,7 @@ public class GameSessionHub : Hub
             {
                 UserId = pendingUserId,
                 UserName = pendingUserName,
-                AvailableRoles = new[] { "Spectator", "Player", "CoLeader", "BlackListed" },
+                AvailableRoles = UserRoles,
                 Timestamp = DateTime.UtcNow
             });
     }
