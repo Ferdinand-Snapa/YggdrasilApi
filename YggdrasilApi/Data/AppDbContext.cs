@@ -10,4 +10,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Graph> Graphs => Set<Graph>();
     public DbSet<Node> Nodes => Set<Node>();
     public DbSet<Connection> Connections => Set<Connection>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        // Node.Id is a client-generated GUID string — tell EF not to use the DB to generate it.
+        modelBuilder.Entity<Node>()
+            .Property(n => n.Id)
+            .ValueGeneratedNever();
+    }
 }

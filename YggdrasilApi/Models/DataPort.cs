@@ -11,4 +11,8 @@ public class DataPort : PortDefenition
     /// <see cref="FieldType.Undefined"/> means "accepts any type" (equivalent to the old <c>"any"</c> string).
     /// </summary>
     public FieldType PortType { get; set; } = FieldType.Undefined;
+    /// <summary>
+    /// Whether the port value is nullable (i.e. can be <c>null</c>).
+    /// </summary>
+    public bool Nullable { get; set; } = false;
 }

@@ -2,9 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using YggdrasilApi.GameLogick;
 using YggdrasilApi.Models;
 
-namespace YggdrasilApi.GameLogick;
+namespace YggdrasilApi.GameLogic;
 
 public class RunGraph
 {
@@ -12,22 +13,23 @@ public class RunGraph
     // Returns a dictionary of produced values keyed by "{nodeId}:{portId}" for data outputs.
     public async Task<Dictionary<string, object?>> RunAsync(
         Graph graph,
-        Dictionary<int, object?>? graphInput = null,
-        int? flowInputPortId = null,
+        Dictionary<string, object?>? graphInput = null,
+        string? flowInputPortId = null,
         int charId = -1,
         GameSession? session = null)
     {
         ArgumentNullException.ThrowIfNull(graph, "Run graph: graph");
 
         // local cache for produced data values: "nodeId:portId" -> value
+        // POTENTIAL CHNAGE: make two different local cache for evaluated resulat and executed results
         var localCache = new Dictionary<string, object?>();
 
         // helper to form cache key
-        static string CacheKey(int nodeId, int portId) => nodeId + ":" + portId;
-
+        static string CacheKey(string nodeId, string portId) => nodeId + ":" + portId;
 
         // index nodes by id
         var nodesById = graph.Nodes.ToDictionary(n => n.Id);
+
         // TODO: fix a solution for graphs to be evaluated
         if (flowInputPortId == null) return localCache;
 
@@ -35,13 +37,14 @@ public class RunGraph
         Node startNode = graph.Nodes.FirstOrDefault(n => n.Id == flowInputPortId)!;
         // Queue carries (node, triggeredPortId): portId is the flow input port that activated the node,
         // or null for entry nodes that have no incoming flow connection.
-        var queue = new Queue<(Node node, int? portId)>([(startNode, null)]);
+        var queue = new Queue<(Node node, string? portId)>([(startNode, null)]);
 
 
         // main execution loop
         while (queue.Count > 0)
         {
             var (node, triggeredPortId) = queue.Dequeue();
+
             ArgumentNullException.ThrowIfNull(node.Definition, "Run graph: node " + node.Id + " missing definition");
 
             // load persisted values into runtime dictionary
@@ -50,59 +53,32 @@ public class RunGraph
             // build inputs for this node
             var inputs = new Dictionary<string, object?>();
 
-            // inject a boolean for every input flow port:
-            // true  → this port was the one that triggered this execution
-            // false → it was not (includes the null/entry-node case)
-            foreach (var inPort in node.Definition.InputPorts)
-            {
-                if (inPort is FlowPort)
-                    inputs[inPort.Name] = triggeredPortId.HasValue && inPort.PortId == triggeredPortId.Value;
-            }
+            var inputConnections = graph.Connections.Where(c => c.ToNodeId == node.Id).ToList();
 
-            foreach (var inPort in node.Definition.InputPorts)
+            foreach (var conn in inputConnections)
             {
-                if (inPort is FlowPort) continue;
-
-                // find connection feeding this input
-                var conn = graph.Connections.FirstOrDefault(c => c.ToNodeId == node.Id && c.ToPortId == inPort.PortId);
-                if (conn == null)
+                //null connection type is flow input
+                if (conn.ConnectionType == null)
                 {
-                    // fallback to node.Values by name
-                    if (node.Values.TryGetValue(inPort.Name, out var val)) inputs[inPort.Name] = val;
-                    else throw new Exception($"Node id: {node.Id} has unconnected input port: {inPort.Name}");
+                    //every flow input except the triggered one is set to false
+                    inputs[conn.ToPortId] = conn.ToPortId == triggeredPortId;
+                    continue;
+                }
+                //if the value allready exist within the cache
+                if (localCache.TryGetValue(CacheKey(conn.FromNodeId, conn.FromPortId), out var valueFromCache))
+                {
+                    inputs[conn.ToPortId] = valueFromCache;
                     continue;
                 }
 
-                // graph-level input: FromNodeId == 0
-                if (conn.FromNodeId == 0)
+                var producerResult = await EvaluateNodeAsync(graph, conn.FromNodeId, graphInput, localCache, charId, session);
+                if (producerResult == null) continue;
+                foreach (var (key, producedValue) in producerResult.DataOutputs)
                 {
-                    if (graphInput != null && graphInput.TryGetValue(conn.FromPortId, out var gv))
-                    {
-                        inputs[inPort.Name] = gv;
-                    }
-                    else throw new Exception($"Missing graph input for port id: {conn.FromPortId}");
-                    continue;
+                    localCache[CacheKey(conn.FromNodeId, key)] = producedValue;
                 }
-
-                // normal node-to-node connection
-                var fromNode = nodesById.GetValueOrDefault(conn.FromNodeId)
-                    ?? throw new Exception("Graph doesn't contain node id: " + conn.FromNodeId);
-
-                var producedKey = CacheKey(fromNode.Id, conn.FromPortId);
-                if (localCache.TryGetValue(producedKey, out var produced))
-                {
-                    inputs[inPort.Name] = produced;
-                }
-                else
-                {
-                    // need to evaluate producer node first (depth-first)
-                    var producerResult = await EvaluateNodeAsync(graph, fromNode, graphInput, localCache, charId, session);
-                    // after evaluation, the value should be in cache
-                    if (localCache.TryGetValue(producedKey, out var produced2))
-                        inputs[inPort.Name] = produced2;
-                    else
-                        throw new Exception($"Missing value from {producedKey}");
-                }
+                if (!producerResult.DataOutputs.TryGetValue(conn.FromPortId, out var value)) continue;
+                inputs[conn.ToPortId] = value;
             }
 
             // execute or evaluate this node
@@ -166,83 +142,51 @@ public class RunGraph
     // Evaluate a node (and recursively its dependencies) and populate localCache with produced data outputs.
     private async Task<NodeDefinition.NodeExecutionResult?> EvaluateNodeAsync(
         Graph graph,
-        Node node,
-        Dictionary<int, object?>? graphInput,
+        string nodeId,
+        Dictionary<string, object?>? graphInput,
         Dictionary<string, object?> localCache,
-        int charId,
+        int charId = -1,
         GameSession? session = null)
     {
-        if (node.Definition == null) throw new Exception("Node definition is null for node id: " + node.Id);
+        var node = graph.Nodes.FirstOrDefault(n => n.Id == nodeId);
+        if (node == null) return null;
+
+        // load persisted values into runtime dictionary
         node.LoadValues();
 
-        // build inputs similar to RunAsync but without queuing
+        if (node.Definition == null) return null;
+
         var inputs = new Dictionary<string, object?>();
-        foreach (var inPort in node.Definition.InputPorts)
-        {
-            if (inPort is FlowPort) continue;
-            var conn = graph.Connections.FirstOrDefault(c => c.ToNodeId == node.Id && c.ToPortId == inPort.PortId);
-            if (conn == null)
-            {
-                if (node.Values.TryGetValue(inPort.Name, out var val))
-                    inputs[inPort.Name] = val;
+        // helper to form cache key
+        static string CacheKey(string nodeId, string portId) => nodeId + ":" + portId;
 
-                else
-                    throw new Exception($"Node id: {node.Id} has unconnected input port: {inPort.Name}");
+        var inputConnections = graph.Connections.Where(c => c.ToNodeId == node.Id).ToList();
+
+        foreach (var conn in inputConnections)
+        {
+            //evaluate Nodes should not have flow ports
+            if (conn.ConnectionType == null) continue;
+
+            //if the value allready exist within the cache
+            if (localCache.TryGetValue(CacheKey(conn.FromNodeId, conn.FromPortId), out var valueFromCache))
+            {
+                inputs[conn.ToPortId] = valueFromCache;
                 continue;
             }
+            // recursive call for value
+            var evaluateResult = await EvaluateNodeAsync(graph, conn.FromNodeId, graphInput, localCache, charId, session);
+            if (evaluateResult == null) continue;
 
-            if (conn.FromNodeId == 0)
-            {
-                if (graphInput != null && graphInput.TryGetValue(conn.FromPortId, out var gv)) inputs[inPort.Name] = gv;
-                else throw new Exception($"Missing graph input for port id: {conn.FromPortId}");
-                continue;
-            }
-
-            var fromNode = graph.Nodes.FirstOrDefault(n => n.Id == conn.FromNodeId) ?? throw new Exception("Graph doesn't contain node id: " + conn.FromNodeId);
-            var producedKey = fromNode.Id + ":" + conn.FromPortId;
-            if (localCache.TryGetValue(producedKey, out var produced)) inputs[inPort.Name] = produced;
-            else
-            {
-                // recursively evaluate producer
-                var prodResult = await EvaluateNodeAsync(graph, fromNode, graphInput, localCache, charId, session);
-                // store producer outputs into cache
-                if (prodResult != null)
-                {
-                    foreach (var kv in prodResult.DataOutputs)
-                    {
-                        if (fromNode.Definition!.OutputPorts.FirstOrDefault(p => p.Name == kv.Key) is not DataPort outPort)
-                            continue;
-                        localCache[fromNode.Id + ":" + outPort.PortId] = kv.Value;
-                    }
-                }
-
-                if (localCache.TryGetValue(producedKey, out var produced2)) inputs[inPort.Name] = produced2;
-                else throw new Exception($"Missing value from {producedKey}");
-            }
+            if (!evaluateResult.DataOutputs.TryGetValue(conn.FromPortId, out var value)) continue;
+            inputs[conn.ToPortId] = value;
         }
 
-        NodeDefinition.NodeExecutionResult? result = null;
-
-        if (node.Definition.Evaluate != null)
-            result = await node.Definition.Evaluate(inputs, node.Values, charId, session);
-
-        else if (node.Definition.Execute != null)
-            throw new Exception("Execute Node read before it was ever called: " + node.Id);
-
-        else
-            throw new Exception("Node definition has neither Evaluate nor Execute for node id: " + node.Id);
-
-        // populate cache for this node's outputs
-        if (result != null)
+        var result = await node.Definition.Evaluate(inputs, localCache, charId, session);
+        // stores the result data outputs in the local cache
+        foreach (var (key, producedValue) in result!.DataOutputs)
         {
-            foreach (var kv in result.DataOutputs)
-            {
-                if (node.Definition.OutputPorts.FirstOrDefault(p => p.Name == kv.Key) is not DataPort outPort)
-                    continue;
-                localCache[node.Id + ":" + outPort.PortId] = kv.Value;
-            }
+            localCache[CacheKey(nodeId, key)] = producedValue;
         }
-
         return result;
     }
 }

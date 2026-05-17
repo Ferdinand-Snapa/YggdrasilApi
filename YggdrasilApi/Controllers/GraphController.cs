@@ -59,21 +59,21 @@ public class GraphController(IGraphService service) : ControllerBase
     }
 
     [HttpDelete("/nodes/{nodeId}")]
-    public async Task<ActionResult> DeleteNode(int nodeId)
+    public async Task<ActionResult> DeleteNode(string nodeId)
     {
         var result = await service.DeleatNodeAsync(nodeId);
         return result ? NoContent() : NotFound("Node or Graph not found");
     }
 
     [HttpPut("/nodes/{nodeId}")]
-    public async Task<ActionResult> UpdateNodeAsync(int id, UpdateNodeRequest request)
+    public async Task<ActionResult> UpdateNodeAsync(string nodeId, UpdateNodeRequest request)
     {
-        var result = await service.UpdateNodeAsync(id, request);
-        return result ? NoContent() : NotFound("Graph with given Id was not found");
+        var result = await service.UpdateNodeAsync(nodeId, request);
+        return result ? NoContent() : NotFound("Node with given Id was not found");
     }
 
     [HttpPut("/nodes/{nodeId}/values")]
-    public async Task<ActionResult> SetNodeValues(int nodeId, SetNodeValuesRequest request)
+    public async Task<ActionResult> SetNodeValues(string nodeId, SetNodeValuesRequest request)
     {
         var result = await service.SetNodeValuesAsync(nodeId, request.Values);
         return result ? NoContent() : NotFound("Node not found");

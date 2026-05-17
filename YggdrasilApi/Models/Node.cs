@@ -1,12 +1,19 @@
-﻿using System.Text.Json;
+﻿using System;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json;
 using YggdrasilApi.GameLogick;
 
 namespace YggdrasilApi.Models
 {
     public class Node
     {
-        public int Id { get; set; }
+        /// <summary>
+        /// Unique identifier for this node. A new GUID is automatically assigned on construction.
+        /// Marked as never database-generated so EF uses the value we set in C#.
+        /// </summary>
+        [DatabaseGenerated(DatabaseGeneratedOption.None)]
+        public string Id { get; set; } = Guid.NewGuid().ToString();
+
         public int PositionX { get; set; }
         public int PositionY { get; set; }
         public string Type { get; set; } = string.Empty;
@@ -17,7 +24,7 @@ namespace YggdrasilApi.Models
 
         // Runtime view of the values. Not mapped by EF. Use LoadValues / SaveValues to sync with ValuesJson.
         [NotMapped]
-        public Dictionary<string, object?> Values { get; set; } = new Dictionary<string, object?>();
+        public Dictionary<string, object?> Values { get; set; } = [];
 
         public void LoadValues()
         {
@@ -25,16 +32,16 @@ namespace YggdrasilApi.Models
             {
                 if (string.IsNullOrWhiteSpace(ValuesJson))
                 {
-                    Values = new Dictionary<string, object?>();
+                    Values = [];
                     return;
                 }
 
                 var doc = JsonSerializer.Deserialize<Dictionary<string, JsonElement?>>(ValuesJson);
-                Values = doc?.ToDictionary(k => k.Key, v => (object?)v.Value) ?? new Dictionary<string, object?>();
+                Values = doc?.ToDictionary(k => k.Key, v => (object?)v.Value) ?? [];
             }
             catch
             {
-                Values = new Dictionary<string, object?>();
+                Values = [];
             }
         }
 
@@ -42,7 +49,7 @@ namespace YggdrasilApi.Models
         {
             try
             {
-                ValuesJson = JsonSerializer.Serialize(Values ?? new Dictionary<string, object?>());
+                ValuesJson = JsonSerializer.Serialize(Values ?? []);
             }
             catch
             {

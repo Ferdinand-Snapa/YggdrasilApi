@@ -22,13 +22,13 @@ namespace YggdrasilApi.GameLogick
                     Type = "InputFlow",
                     OutputPorts =
                     [
-                        new DataPort { PortId = 0, Name = "Flow" }
+                        new FlowPort { PortId = "flow", Name = "Flow" }
                     ],
                     Execute = async (_, _, _, _) =>
                     {
                         return new NodeDefinition.NodeExecutionResult
                         {
-                            FlowOutputs = [0]
+                            FlowOutputs = ["flow"]
                         };
                     }
                 },
@@ -40,7 +40,7 @@ namespace YggdrasilApi.GameLogick
                     Type = "Const",
                     OutputPorts =
                     [
-                        new DataPort { PortId = 0, Name = "Value" }
+                        new DataPort { PortId = "value", Name = "Value", PortType = FieldType.Undefined }
                     ],
                     Evaluate = async (inputs, nodeValues, charId, session) =>
                     {
@@ -62,7 +62,7 @@ namespace YggdrasilApi.GameLogick
                     Type = "Input",
                     OutputPorts =
                     [
-                        new DataPort { PortId = 0, Name = "Value", PortType = FieldType.Undefined }
+                        new DataPort { PortId = "value", Name = "Value", PortType = FieldType.Undefined }
                     ],
                     Evaluate = async (_, _, _, _) =>
                     {
@@ -80,7 +80,7 @@ namespace YggdrasilApi.GameLogick
                     Type = "OutputFlow",
                     InputPorts =
                     [
-                        new FlowPort { PortId = 0, Name = "OutFlow" }
+                        new FlowPort { PortId = "out_flow", Name = "OutFlow" }
                     ],
                     Evaluate = async (inputs, _, _, _) =>
                     {
@@ -97,13 +97,13 @@ namespace YggdrasilApi.GameLogick
                     Type = "Output",
                     InputPorts =
                     [
-                        new DataPort { PortId = 0, Name = "Value", PortType = FieldType.Undefined }
+                        new DataPort { PortId = "value", Name = "Value", PortType = FieldType.Undefined }
                     ],
                     Evaluate = async (inputs, _, _, _) =>
                     {
                         return new NodeDefinition.NodeExecutionResult
                         {
-                            DataOutputs = new Dictionary<string, object?> { ["Value"] = inputs["Value"] }
+                            DataOutputs = new Dictionary<string, object?> { ["Value"] = inputs.TryGetValue("Value", out var v) ? v : null }
                         };
                     }
                 },
@@ -114,12 +114,12 @@ namespace YggdrasilApi.GameLogick
                     Type = "Print",
                     InputPorts =
                     [
-                        new FlowPort { PortId = 0, Name = "In" },
-                        new DataPort  { PortId = 1, Name = "Value", PortType = FieldType.Undefined }
+                        new FlowPort { PortId = "trigger", Name = "In"    },
+                        new DataPort  { PortId = "value",   Name = "Value", PortType = FieldType.Undefined }
                     ],
                     OutputPorts =
                     [
-                        new FlowPort { PortId = 2, Name = "Out" }
+                        new FlowPort { PortId = "done", Name = "Out" }
                     ],
                     Execute = async (inputs, nodeValues, charId, session) =>
                     {
@@ -133,7 +133,7 @@ namespace YggdrasilApi.GameLogick
                         return new NodeDefinition.NodeExecutionResult
                         {
                             DataOutputs = new Dictionary<string, object?>(),
-                            FlowOutputs = [2]
+                            FlowOutputs = ["done"]
                         };
                     }
                 },
@@ -147,12 +147,12 @@ namespace YggdrasilApi.GameLogick
                     Type = "Addition",
                     InputPorts =
                     [
-                        new DataPort { PortId = 0, Name = "A", PortType = FieldType.Float },
-                        new DataPort { PortId = 1, Name = "B", PortType = FieldType.Float }
+                        new DataPort { PortId = "a", Name = "A", PortType = FieldType.Float },
+                        new DataPort { PortId = "b", Name = "B", PortType = FieldType.Float }
                     ],
                     OutputPorts =
                     [
-                        new DataPort { PortId = 2, Name = "Result", PortType = FieldType.Float }
+                        new DataPort { PortId = "result", Name = "Result", PortType = FieldType.Float }
                     ],
                     Evaluate = async (inputs, _, _, _) =>
                     {
@@ -176,12 +176,12 @@ namespace YggdrasilApi.GameLogick
                     Type = "Multiply",
                     InputPorts =
                     [
-                        new DataPort  { PortId = 0, Name = "A", PortType = FieldType.Float },
-                        new DataPort  { PortId = 1, Name = "B", PortType = FieldType.Float }
+                        new DataPort { PortId = "a", Name = "A", PortType = FieldType.Float },
+                        new DataPort { PortId = "b", Name = "B", PortType = FieldType.Float }
                     ],
                     OutputPorts =
                     [
-                        new DataPort  { PortId = 0, Name = "Result", PortType = FieldType.Float }
+                        new DataPort { PortId = "result", Name = "Result", PortType = FieldType.Float }
                     ],
                     Evaluate = async (inputs, _, _, _) =>
                     {
@@ -205,13 +205,13 @@ namespace YggdrasilApi.GameLogick
                     Type = "If",
                     InputPorts =
                     [
-                        new FlowPort { PortId = 0, Name = "In" },
-                        new DataPort  { PortId = 1, Name = "Condition", PortType = FieldType.Bool }
+                        new FlowPort { PortId = "trigger",   Name = "In"        },
+                        new DataPort  { PortId = "condition", Name = "Condition", PortType = FieldType.Bool }
                     ],
                     OutputPorts =
                     [
-                        new FlowPort { PortId = 2, Name = "True"  },
-                        new FlowPort { PortId = 3, Name = "False" }
+                        new FlowPort { PortId = "true",  Name = "True"  },
+                        new FlowPort { PortId = "false", Name = "False" }
                     ],
                     Evaluate = async (inputs, _, _, _) =>
                     {
@@ -221,7 +221,7 @@ namespace YggdrasilApi.GameLogick
                         return new NodeDefinition.NodeExecutionResult
                         {
                             DataOutputs = new Dictionary<string, object?>(),
-                            FlowOutputs = condition ? [2] : [3]
+                            FlowOutputs = condition ? ["true"] : ["false"]
                         };
                     }
                 },
@@ -239,7 +239,7 @@ namespace YggdrasilApi.GameLogick
                     Type = "GetSelfValue",
                     OutputPorts =
                     [
-                        new DataPort { PortId = 0, Name = "Value" }
+                        new DataPort { PortId = "value", Name = "Value" }
                     ],
                     Evaluate = async (inputs, nodeValues, charId, session) =>
                     {
@@ -281,11 +281,11 @@ namespace YggdrasilApi.GameLogick
                     Type = "GetUnitValue",
                     InputPorts =
                     [
-                        new DataPort { PortId = 0, Name = "Unit", PortType = FieldType.Unit }
+                        new DataPort { PortId = "unit",  Name = "Unit",  PortType = FieldType.Unit }
                     ],
                     OutputPorts =
                     [
-                        new DataPort { PortId = 1, Name = "Value" }
+                        new DataPort { PortId = "value", Name = "Value" }
                     ],
                     Evaluate = async (inputs, nodeValues, charId, session) =>
                     {
@@ -332,12 +332,12 @@ namespace YggdrasilApi.GameLogick
                     Type = "SetValue",
                     InputPorts =
                     [
-                        new FlowPort { PortId = 0, Name = "Set"   },
-                        new DataPort  { PortId = 1, Name = "Value", PortType = FieldType.Undefined }
+                        new FlowPort { PortId = "trigger", Name = "Set"   },
+                        new DataPort  { PortId = "value",   Name = "Value", PortType = FieldType.Undefined }
                     ],
                     OutputPorts =
                     [
-                        new FlowPort { PortId = 2, Name = "Done" }
+                        new FlowPort { PortId = "done", Name = "Done" }
                     ],
                     Execute = async (inputs, nodeValues, charId, session) =>
                     {
@@ -365,7 +365,7 @@ namespace YggdrasilApi.GameLogick
                         return new NodeDefinition.NodeExecutionResult
                         {
                             DataOutputs = new Dictionary<string, object?>(),
-                            FlowOutputs = [2]
+                            FlowOutputs = ["done"]
                         };
                     }
                 }

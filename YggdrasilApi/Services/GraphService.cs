@@ -92,7 +92,7 @@ public class GraphService(AppDbContext context) : IGraphService
         return true;
     }
 
-    public async Task<bool> SetNodeValuesAsync(int nodeId, IDictionary<string, object?> values)
+    public async Task<bool> SetNodeValuesAsync(string nodeId, IDictionary<string, object?> values)
     {
         var node = await context.Nodes.FirstOrDefaultAsync(n => n.Id == nodeId);
         if (node is null)
@@ -193,7 +193,7 @@ public class GraphService(AppDbContext context) : IGraphService
         return node;
     }
 
-    public async Task<bool> DeleatNodeAsync(int nodeId)
+    public async Task<bool> DeleatNodeAsync(string nodeId)
     {
         var node = await context.Nodes.FirstOrDefaultAsync(n => n.Id == nodeId);
 
@@ -205,7 +205,7 @@ public class GraphService(AppDbContext context) : IGraphService
         return true;
     }
 
-    public async Task<bool> UpdateNodeAsync(int nodeId, UpdateNodeRequest request)
+    public async Task<bool> UpdateNodeAsync(string nodeId, UpdateNodeRequest request)
     {
         var node = await context.Nodes.FirstOrDefaultAsync(n => n.Id == nodeId);
 

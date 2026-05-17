@@ -23,7 +23,8 @@ namespace YggdrasilApi.GameLogick
         public class NodeExecutionResult
         {
             public Dictionary<string, object?> DataOutputs { get; set; } = new Dictionary<string, object?>();
-            public int[] FlowOutputs { get; set; } = [];
+            /// <summary>Port IDs of the flow-output ports to activate after this node runs.</summary>
+            public string[] FlowOutputs { get; set; } = [];
         }
 
         // Evaluate — purely functional nodes; synchronous, no side-effects.

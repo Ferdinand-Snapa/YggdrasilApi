@@ -74,8 +74,8 @@ namespace YggdrasilApi.Models
                     var root = doc.RootElement;
 
                     var name = root.TryGetProperty(nameof(Name), out var nameProp)
-                        ? nameProp.GetString() ?? node.Id.ToString()
-                        : node.Id.ToString();
+                        ? nameProp.GetString() ?? node.Id
+                        : node.Id;
 
                     // Read the stored string and convert to FieldType via the compatibility helper.
                     // Unrecognised strings resolve to FieldType.Undefined (accept-any).
@@ -89,7 +89,7 @@ namespace YggdrasilApi.Models
             }
             catch { /* malformed JSON — fall through to defaults */ }
 
-            return (node.Id.ToString(), FieldType.Undefined);
+            return (node.Id, FieldType.Undefined);
         }
     }
 }

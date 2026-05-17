@@ -25,7 +25,7 @@ public class UserInputRequest
     /// A discriminator string identifying what kind of action is being requested
     /// (e.g. <c>"DiceRoll"</c>, <c>"TargetSelection"</c>, <c>"SpellChoice"</c>).
     /// </summary>
-    public string RequestType { get; set; }
+
 
     // ─────────────────────────────────────────────────────────────────────────
     // Schema
@@ -71,11 +71,10 @@ public class UserInputRequest
     // Constructors
     // ─────────────────────────────────────────────────────────────────────────
 
-    public UserInputRequest(string id, int unitId, string requestType,
+    public UserInputRequest(string id, int unitId,
                             Dictionary<string, InputField> schema)
     {
         Id = id ?? throw new ArgumentNullException(nameof(id));
-        RequestType = requestType ?? throw new ArgumentNullException(nameof(requestType));
         Schema = schema ?? new Dictionary<string, InputField>();
         UnitId = unitId;
         CreatedAt = DateTime.UtcNow;
